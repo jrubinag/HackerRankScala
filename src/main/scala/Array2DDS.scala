@@ -2,6 +2,7 @@ package main.scala
 
 import scala.collection.mutable.ListBuffer
 
+//https://www.hackerrank.com/challenges/2d-array/problem?h_l=interview&playlist_slugs%5B%5D=interview-preparation-kit&playlist_slugs%5B%5D=arrays
 object Array2DDS {
 
   // Complete the hourglassSum function below.
