@@ -59,6 +59,7 @@ def sum(xs: List[(String,Double)]): Double = {
   inner(xs, 0.0)
 }
 
+
 def getDecimalPart( number : Double) : Int = {
     val integer = number.toInt
 //  println(s"(number - integer) : ${(number - integer)}")
@@ -75,6 +76,84 @@ def getDecimalPartWthPrecision(number : Double) : Double = {
   //println(s"decimal : $decimal")
   decimal
 }
+
+def getRestOfDecimalPart(number : Double) : Double = {
+  val roundedDowNumber = roundDown(number,1)
+  //println(s"integer : $integer")
+  val decimal  = (number - roundedDowNumber)
+  //println(s"decimal : $decimal")
+  decimal
+}
+
+//Add up the portfolio percentages
+def getSumPortFolioTier2(assetsTier2Data : List[AssetAllocationTier2Data]) : Double = {
+
+  def inner(xs: List[AssetAllocationTier2Data], accum: Double): Double = {
+    xs match {
+      case x :: tail => inner(tail, accum + x.portfolioPercent)
+      case Nil => accum
+    }
+  }
+  inner(assetsTier2Data, 0.0)
+}
+
+//Recalculating portfolio percents of the Tier 1 using the Tier2's percentages rounded
+def recalculatePortfolioPercentsT1( assetsData : List[AssetAllocationTier1Data]) : List[AssetAllocationTier1Data] = {
+  assetsData.map(tier1Data => tier1Data.copy(portfolioPercent = roundDown(getSumPortFolioTier2(tier1Data.allocations),1) ))
+}
+
+//def adjustToOneDecimal() :Unit = {
+//  println(s"adjustToOneDecimal")
+//
+//  println(s"var : $tier1Allocations")
+//
+//  val level2Data  = extractLevel2Data(tier1Allocations)
+//  println(s"calling  extractLevel2Data: $level2Data")
+//
+//  val roundedValuesDown = level2Data.map(x => x.copy(portfolioPercent = roundDown(x.portfolioPercent,1)))
+//  println(s"roundedValuesDown : $roundedValuesDown")
+//
+//  val tuplasWithOutRounding : List[(String,Double)] = level2Data.map(x => (x.assetClass,x.portfolioPercent))
+//  println(s"tuplasWithOutRounding : $tuplasWithOutRounding")
+//  val tuplasRoundedDown : List[(String,Double)] = roundedValuesDown.map( x => ( x.assetClass, x.portfolioPercent))
+//  println(s"tuplasRoundedDown : $tuplasRoundedDown")
+//
+//  val sumatuplasRoundedDown = sum(tuplasRoundedDown)
+//  println(s"sumatuplasRoundedDown : $sumatuplasRoundedDown")
+//
+//  var diff =  BigDecimal(100 - sum(tuplasRoundedDown)).setScale(1, BigDecimal.RoundingMode.HALF_UP).toFloat
+//  println(s"diff : $diff")
+//
+//
+//  val orderedDesc = tuplasWithOutRounding.sortWith( (x,y) => getDecimalPartWthPrecision(x._2) > getDecimalPartWthPrecision(y._2))
+//  println(s"orderedDesc : $orderedDesc")
+//
+//
+//  val ajustePerIter : Float = "0.1".toFloat
+//
+//  var numeroIteraciones : Int = (if(diff < 1 && diff>0) diff * 10 else diff ).toInt
+//  println(s"numeroIteraciones : $numeroIteraciones")
+//
+//  val ajustedList = orderedDesc.map(x => {
+//    if (numeroIteraciones > 0 ){
+//      println(s"diff : $diff")
+//      //diff -= ajustePerIter
+//      numeroIteraciones -=1
+//      x.copy(_2 = x._2 +  ajustePerIter)
+//      val roundedTuple = tuplasRoundedDown.find( y => y._1 ==x._1 ).get
+//      println(s"roundedTuple : $roundedTuple")
+//      roundedTuple.copy(_2 = roundDown(roundedTuple._2 + ajustePerIter, 1))
+//
+//    }else {
+//      tuplasRoundedDown.find( y => y._1 ==x._1 ).get
+//    }
+//  })
+//
+//  print(s"ajustedList = $ajustedList")
+//
+//  val sumAdjustedList = sum(ajustedList)
+//  println(s"the sum of the adjusted list is : $sumAdjustedList")
+//}
 
 def run() : Unit =  {
 
@@ -93,7 +172,6 @@ def run() : Unit =  {
   val tuplasWithOutRounding : List[(String,Double)] = level2Data.map(x => (x.assetClass,x.portfolioPercent))
   println(s"tuplasWithOutRounding : $tuplasWithOutRounding")
   val tuplasRoundedDown : List[(String,Double)] = roundedValuesDown.map( x => ( x.assetClass, x.portfolioPercent))
-
   println(s"tuplasRoundedDown : $tuplasRoundedDown")
 
   println(s"sumatuplasRoundedDown : ${sum(tuplasRoundedDown)}")
@@ -102,7 +180,7 @@ def run() : Unit =  {
   println(s"diff : $diff")
 
 
-  val orderedDesc = tuplasWithOutRounding.sortWith( (x,y) => getDecimalPartWthPrecision(x._2) > getDecimalPartWthPrecision(y._2))
+  val orderedDesc = tuplasWithOutRounding.sortWith( (x,y) => getRestOfDecimalPart(x._2) > getRestOfDecimalPart(y._2))
   println(s"orderedDesc : $orderedDesc")
 
 
@@ -113,29 +191,47 @@ val ajustePerIter : Float = "0.1".toFloat
 
   val ajustedList = orderedDesc.map(x => {
     if (numeroIteraciones > 0 ){
-      println(s"diff : $diff")
-      //diff -= ajustePerIter
-      numeroIteraciones -=1
-      x.copy(_2 = x._2 +  ajustePerIter)
+      numeroIteraciones -= 1
       val roundedTuple = tuplasRoundedDown.find( y => y._1 ==x._1 ).get
-      println(s"roundedTuple : $roundedTuple")
       roundedTuple.copy(_2 = roundDown(roundedTuple._2 + ajustePerIter, 1))
-
     }else {
       tuplasRoundedDown.find( y => y._1 ==x._1 ).get
     }
   })
 
-  print(s"ajustedList = $ajustedList")
+  println(s"ajustedList = $ajustedList")
+
+  val adjustedListFor = for ((e,i) <- orderedDesc.zipWithIndex) yield {
+    println(s"i : $i - e: $e")
+    if (i <  numeroIteraciones){
+    val roundedTuple = tuplasRoundedDown.find( y => y._1 == e._1 ).get
+    roundedTuple.copy(_2 = roundDown(roundedTuple._2 + ajustePerIter, 1))
+  }else {
+    tuplasRoundedDown.find( y => y._1 == e._1 )
+  }}
+
+  println(s"adjustedListFor = $adjustedListFor")
 
   val sumAdjustedList = sum(ajustedList)
   println(s"the sum of the adjusted list is : $sumAdjustedList")
+
+  val assetsWithTier2Rounded = tier1Allocations.map(x => {
+    x.copy(allocations = x.allocations.map( y => y.copy( portfolioPercent = ajustedList.find( p => p._1 == y.assetClass).get._2)))
+//    x.allocations.map( y => y.copy( portfolioPercent = ajustedList.find( p => p._1 == y.assetClass).get._2))
+  })
+  println(s"assetsWithTier2Rounded : $assetsWithTier2Rounded")
+
+  val assetsAllocationDataWithT1Rounded = recalculatePortfolioPercentsT1(assetsWithTier2Rounded)
+  println(s"assetsAllocationDataWithT1Rounded : $assetsAllocationDataWithT1Rounded")
+
+
 
 
   // using for in order to use the index for quick access
 
 }
 
+//adjustToOneDecimal()
 run()
 
 /*getDecimalPartWthPrecision(4.729530454610485)
@@ -143,3 +239,10 @@ getDecimalPartWthPrecision(3.6727378764882648)
 getDecimalPartWthPrecision(0.7045283854148139)
 getDecimalPartWthPrecision(0.0)
 getDecimalPartWthPrecision(1.5119386917411533) */
+
+//
+//getRestOfDecimalPart(4.729530454610485)
+//getRestOfDecimalPart(3.6727378764882648)
+//getRestOfDecimalPart(0.7045283854148139)
+//getRestOfDecimalPart(0.0)
+//getRestOfDecimalPart(1.5119386917411533)
