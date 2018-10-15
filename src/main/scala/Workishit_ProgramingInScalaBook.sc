@@ -68,6 +68,14 @@ def getDecimalPart( number : Double) : Int = {
   ( decimalRounded* 10).toInt
 }
 
+def getDecimalPartWthPrecision(number : Double) : Double = {
+  val integer = number.toInt
+  //println(s"integer : $integer")
+  val decimal  = (number - integer)
+  //println(s"decimal : $decimal")
+  decimal
+}
+
 def run() : Unit =  {
 
   println(s"Starting from here")
@@ -90,48 +98,48 @@ def run() : Unit =  {
 
   println(s"sumatuplasRoundedDown : ${sum(tuplasRoundedDown)}")
 
-  var diff =  BigDecimal(100 - sum(tuplasRoundedDown)).setScale(1, BigDecimal.RoundingMode.HALF_UP).toDouble
+  var diff =  BigDecimal(100 - sum(tuplasRoundedDown)).setScale(1, BigDecimal.RoundingMode.HALF_UP).toFloat
   println(s"diff : $diff")
 
-//  val orderedDesc = tuplas.sortBy(_._2).reverse
 
-  val orderedDesc = tuplasWithOutRounding.sortWith( (x,y) => getDecimalPart(x._2) > getDecimalPart(y._2))
+  val orderedDesc = tuplasWithOutRounding.sortWith( (x,y) => getDecimalPartWthPrecision(x._2) > getDecimalPartWthPrecision(y._2))
   println(s"orderedDesc : $orderedDesc")
 
-  val listBuffer = ListBuffer(orderedDesc)
-  println(s"listBuffer : ${listBuffer}")
+
+val ajustePerIter : Float = "0.1".toFloat
+
+  var numeroIteraciones : Int = (if(diff < 1 && diff>0) diff * 10 else diff ).toInt
+  println(s"numeroIteraciones : $numeroIteraciones")
+
+  val ajustedList = orderedDesc.map(x => {
+    if (numeroIteraciones > 0 ){
+      println(s"diff : $diff")
+      //diff -= ajustePerIter
+      numeroIteraciones -=1
+      x.copy(_2 = x._2 +  ajustePerIter)
+      val roundedTuple = tuplasRoundedDown.find( y => y._1 ==x._1 ).get
+      println(s"roundedTuple : $roundedTuple")
+      roundedTuple.copy(_2 = roundDown(roundedTuple._2 + ajustePerIter, 1))
+
+    }else {
+      tuplasRoundedDown.find( y => y._1 ==x._1 ).get
+    }
+  })
+
+  print(s"ajustedList = $ajustedList")
+
+  val sumAdjustedList = sum(ajustedList)
+  println(s"the sum of the adjusted list is : $sumAdjustedList")
 
 
-
-//  println(s"getDecimal1 : ${getDecimalPart(3.6)}")
-//  println(s"getDecimal2 : ${getDecimalPart(0.7)}")
-//  println(s"getDecimal3 : ${getDecimalPart(1.2)}")
-//  println(s"getDecimal4 : ${getDecimalPart(1.6)}")
-val a = 0.1
-  val numerIterations = BigDecimal(diff/a).setScale(0, BigDecimal.RoundingMode.HALF_UP)
-  println(s" div : ${ BigDecimal(diff/a).setScale(0, BigDecimal.RoundingMode.HALF_UP)}")
-
-  for (i <- 1 to numerIterations.toInt ){
-    println(s"i: $i")
-//    listBuffer
-    orderedDesc.updated(i-1,orderedDesc(i-1)._2 + a)
-    println(s" i: $i - Updated" +
-      s": ${orderedDesc.updated(i-1,orderedDesc(i-1)._2 + a)}")
-    println(s" i: $i - : $orderedDesc")
-    println("---------------")
-    println(s" buffer : i: $i - updated: ${listBuffer.updated(i-1,orderedDesc(i-1)._2 + a)}")
-    println(s" buffer : i: $i - : $listBuffer")
-
-  }
-
-
-
-
-
-
-
-
+  // using for in order to use the index for quick access
 
 }
 
 run()
+
+/*getDecimalPartWthPrecision(4.729530454610485)
+getDecimalPartWthPrecision(3.6727378764882648)
+getDecimalPartWthPrecision(0.7045283854148139)
+getDecimalPartWthPrecision(0.0)
+getDecimalPartWthPrecision(1.5119386917411533) */
