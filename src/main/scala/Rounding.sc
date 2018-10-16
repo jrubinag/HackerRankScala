@@ -93,38 +93,57 @@ def sumTier2Values(xs: List[(String,Double)]): Double = {
     decimal
   }
 
-  def getSumPortFolioTier2(assetsTier2Data : List[AssetAllocationTier2Data]) : Double = {
+//  def getSumPortFolioTier2(assetsTier2Data : List[AssetAllocationTier2Data]) : Double = {
+//
+//    def inner(xs: List[AssetAllocationTier2Data], accum: Double): Double = {
+//      xs match {
+//        case x :: tail => inner(tail, accum + x.portfolioPercent)
+//        case Nil => accum
+//      }
+//    }
+//    inner(assetsTier2Data, 0.0)
+//  }
+//
+//  def getSumTargetTier2(assetsTier2Data : List[AssetAllocationTier2Data]) : Double = {
+//
+//    def inner(xs: List[AssetAllocationTier2Data], accum: Double): Double = {
+//      xs match {
+//        case x :: tail => inner(tail, accum + x.targetPercentage)
+//        case Nil => accum
+//      }
+//    }
+//    inner(assetsTier2Data, 0.0)
+//  }
+
+  val acumulatorTargetFun = (acc : Double, assetTier2Data : AssetAllocationTier2Data) => {acc + assetTier2Data.targetPercentage}
+  val acumulatorPortfolioFun = (acc : Double, assetTier2Data : AssetAllocationTier2Data) => {acc + assetTier2Data.portfolioPercent}
+  def getSum(assetsTier2Data : List[AssetAllocationTier2Data] , acumulatorFun : (Double, AssetAllocationTier2Data) => Double) = {
 
     def inner(xs: List[AssetAllocationTier2Data], accum: Double): Double = {
       xs match {
-        case x :: tail => inner(tail, accum + x.portfolioPercent)
+        case x :: tail => inner(tail, acumulatorFun(accum,x))
         case Nil => accum
       }
     }
     inner(assetsTier2Data, 0.0)
   }
 
-  def getSumTargetTier2(assetsTier2Data : List[AssetAllocationTier2Data]) : Double = {
+//  def recalculatePortfolioPercentsT1( assetsData : List[AssetAllocationTier1Data]) : List[AssetAllocationTier1Data] = {
+//    println(s"recalculatePortfolioPercentsT1 with : assetsData : $assetsData")
+//    assetsData.map(tier1Data => {
+//      println(s"getSumPortF2 : ${getSumPortFolioTier2(tier1Data.allocations)}")
+//      tier1Data.copy(portfolioPercent = round(getSumPortFolioTier2(tier1Data.allocations),1) )
+//    })
+//  }
+//
+//  def recalculateTargetPercentsT1( assetsData : List[AssetAllocationTier1Data]) : List[AssetAllocationTier1Data] = {
+//    assetsData.map(tier1Data => tier1Data.copy(targetPercentage = round(getSumTargetTier2(tier1Data.allocations),1) ))
+//  }
 
-    def inner(xs: List[AssetAllocationTier2Data], accum: Double): Double = {
-      xs match {
-        case x :: tail => inner(tail, accum + x.targetPercentage)
-        case Nil => accum
-      }
-    }
-    inner(assetsTier2Data, 0.0)
-  }
-
-  def recalculatePortfolioPercentsT1( assetsData : List[AssetAllocationTier1Data]) : List[AssetAllocationTier1Data] = {
-    println(s"recalculatePortfolioPercentsT1 with : assetsData : $assetsData")
-    assetsData.map(tier1Data => {
-      println(s"getSumPortF2 : ${getSumPortFolioTier2(tier1Data.allocations)}")
-      tier1Data.copy(portfolioPercent = round(getSumPortFolioTier2(tier1Data.allocations),1) )
-    })
-  }
-
-  def recalculateTargetPercentsT1( assetsData : List[AssetAllocationTier1Data]) : List[AssetAllocationTier1Data] = {
-    assetsData.map(tier1Data => tier1Data.copy(targetPercentage = round(getSumTargetTier2(tier1Data.allocations),1) ))
+  val funCalculateTargetsT1 = (tier1Data : AssetAllocationTier1Data) => { tier1Data.copy(portfolioPercent = round(getSum(tier1Data.allocations,acumulatorTargetFun),1) ) }
+  val funCalculatePortfolioT1 = (tier1Data : AssetAllocationTier1Data) => { tier1Data.copy(targetPercentage = round(getSum(tier1Data.allocations,acumulatorPortfolioFun),1) ) }
+  def recalculatePercents(assetsData : List[AssetAllocationTier1Data] , f : AssetAllocationTier1Data => AssetAllocationTier1Data) : List[AssetAllocationTier1Data] = {
+    assetsData.map(tier1Data => f(tier1Data))
   }
 
   def roundPortfolioAllocations() : List[AssetAllocationTier1Data] = {
@@ -160,7 +179,7 @@ def sumTier2Values(xs: List[(String,Double)]): Double = {
       x.copy(allocations = x.allocations.map( y => y.copy( portfolioPercent = ajustedList.find( p => p._1 == y.assetClass).fold(("NONE",0.0)){x => x}._2)))
     })
 
-    val assetsAllocationDataWithT1Rounded = recalculatePortfolioPercentsT1(assetsWithTier2Rounded)
+    val assetsAllocationDataWithT1Rounded = recalculatePercents(assetsWithTier2Rounded,funCalculatePortfolioT1)
     assetsAllocationDataWithT1Rounded
 
   }
@@ -197,7 +216,7 @@ def roundTargetPercentages( assets : List[AssetAllocationTier1Data]): List[Asset
     x.copy(allocations = x.allocations.map( y => y.copy( targetPercentage = ajustedList.find( p => p._1 == y.assetClass).fold(("NONE",0.0)){x => x}._2)))
   })
 
-  val assetsAllocationDataWithT1Rounded = recalculateTargetPercentsT1(assetsWithTier2Rounded)
+  val assetsAllocationDataWithT1Rounded = recalculatePercents(assetsWithTier2Rounded,funCalculateTargetsT1)
   assetsAllocationDataWithT1Rounded
 //  backtestAllocationSummary.copy( allocationSummary = backtestAllocationSummary.allocationSummary.copy(tier1Allocations = assetsAllocationDataWithT1Rounded))
 
