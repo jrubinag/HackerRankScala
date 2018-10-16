@@ -189,40 +189,45 @@ val ajustePerIter : Float = "0.1".toFloat
   var numeroIteraciones : Int = (if(diff < 1 && diff>0) diff * 10 else diff ).toInt
   println(s"numeroIteraciones : $numeroIteraciones")
 
-  val ajustedList = orderedDesc.map(x => {
-    if (numeroIteraciones > 0 ){
-      numeroIteraciones -= 1
-      val roundedTuple = tuplasRoundedDown.find( y => y._1 ==x._1 ).get
-      roundedTuple.copy(_2 = roundDown(roundedTuple._2 + ajustePerIter, 1))
-    }else {
-      tuplasRoundedDown.find( y => y._1 ==x._1 ).get
-    }
-  })
-
-  println(s"ajustedList = $ajustedList")
+//  val ajustedList = orderedDesc.map(x => {
+//    if (numeroIteraciones > 0 ){
+//      numeroIteraciones -= 1
+//      val roundedTuple = tuplasRoundedDown.find( y => y._1 ==x._1 ).get
+//      roundedTuple.copy(_2 = roundDown(roundedTuple._2 + ajustePerIter, 1))
+//    }else {
+//      tuplasRoundedDown.find( y => y._1 ==x._1 ).get
+//    }
+//  })
+//
+//  println(s"ajustedList = $ajustedList")
 
   val adjustedListFor = for ((e,i) <- orderedDesc.zipWithIndex) yield {
-    println(s"i : $i - e: $e")
+//    println(s"i : $i - e: $e")
     if (i <  numeroIteraciones){
+//      println(s"$i <  $numeroIteraciones")
     val roundedTuple = tuplasRoundedDown.find( y => y._1 == e._1 ).get
+//      println(s"roundedTuple = $roundedTuple")
+//      println(s"test : ${roundedTuple.copy(_2 = roundedTuple._2 + ajustePerIter)}")
     roundedTuple.copy(_2 = roundDown(roundedTuple._2 + ajustePerIter, 1))
   }else {
-    tuplasRoundedDown.find( y => y._1 == e._1 )
+    tuplasRoundedDown.find( y => y._1 == e._1 ).get
   }}
 
   println(s"adjustedListFor = $adjustedListFor")
+  val sumAdjustedListFor = sum(adjustedListFor)
+    println(s"the sum of the adjusted list is : $sumAdjustedListFor")
 
-  val sumAdjustedList = sum(ajustedList)
-  println(s"the sum of the adjusted list is : $sumAdjustedList")
-
-  val assetsWithTier2Rounded = tier1Allocations.map(x => {
-    x.copy(allocations = x.allocations.map( y => y.copy( portfolioPercent = ajustedList.find( p => p._1 == y.assetClass).get._2)))
-//    x.allocations.map( y => y.copy( portfolioPercent = ajustedList.find( p => p._1 == y.assetClass).get._2))
-  })
-  println(s"assetsWithTier2Rounded : $assetsWithTier2Rounded")
-
-  val assetsAllocationDataWithT1Rounded = recalculatePortfolioPercentsT1(assetsWithTier2Rounded)
-  println(s"assetsAllocationDataWithT1Rounded : $assetsAllocationDataWithT1Rounded")
+//  val sumAdjustedList = sum(ajustedList)
+//  println(s"the sum of the adjusted list is : $sumAdjustedList")
+//
+//  val assetsWithTier2Rounded = tier1Allocations.map(x => {
+//    x.copy(allocations = x.allocations.map( y => y.copy( portfolioPercent = ajustedList.find( p => p._1 == y.assetClass).get._2)))
+////    x.allocations.map( y => y.copy( portfolioPercent = ajustedList.find( p => p._1 == y.assetClass).get._2))
+//  })
+//  println(s"assetsWithTier2Rounded : $assetsWithTier2Rounded")
+//
+//  val assetsAllocationDataWithT1Rounded = recalculatePortfolioPercentsT1(assetsWithTier2Rounded)
+//  println(s"assetsAllocationDataWithT1Rounded : $assetsAllocationDataWithT1Rounded")
 
 
 
