@@ -115,8 +115,8 @@ def sumTier2Values(xs: List[(String,Double)]): Double = {
 //    inner(assetsTier2Data, 0.0)
 //  }
 
-  val acumulatorTargetFun = (acc : Double, assetTier2Data : AssetAllocationTier2Data) => {acc + assetTier2Data.targetPercentage}
-  val acumulatorPortfolioFun = (acc : Double, assetTier2Data : AssetAllocationTier2Data) => {acc + assetTier2Data.portfolioPercent}
+//  val acumulatorTargetFun = (acc : Double, assetTier2Data : AssetAllocationTier2Data) => {acc + assetTier2Data.targetPercentage}
+//  val acumulatorPortfolioFun = (acc : Double, assetTier2Data : AssetAllocationTier2Data) => {acc + assetTier2Data.portfolioPercent}
   def getSum(assetsTier2Data : List[AssetAllocationTier2Data] , acumulatorFun : (Double, AssetAllocationTier2Data) => Double) = {
 
     def inner(xs: List[AssetAllocationTier2Data], accum: Double): Double = {
@@ -140,67 +140,32 @@ def sumTier2Values(xs: List[(String,Double)]): Double = {
 //    assetsData.map(tier1Data => tier1Data.copy(targetPercentage = round(getSumTargetTier2(tier1Data.allocations),1) ))
 //  }
 
-  val funCalculateTargetsT1 = (tier1Data : AssetAllocationTier1Data) => { tier1Data.copy(portfolioPercent = round(getSum(tier1Data.allocations,acumulatorTargetFun),1) ) }
-  val funCalculatePortfolioT1 = (tier1Data : AssetAllocationTier1Data) => { tier1Data.copy(targetPercentage = round(getSum(tier1Data.allocations,acumulatorPortfolioFun),1) ) }
+//  val funCalculateTargetsT1 = (tier1Data : AssetAllocationTier1Data) => { tier1Data.copy(targetPercentage = round(getSum(tier1Data.allocations,acumulatorTargetFun),1) ) }
+//  val funCalculatePortfolioT1 = (tier1Data : AssetAllocationTier1Data) => { tier1Data.copy(portfolioPercent = round(getSum(tier1Data.allocations,acumulatorPortfolioFun),1) ) }
   def recalculatePercents(assetsData : List[AssetAllocationTier1Data] , f : AssetAllocationTier1Data => AssetAllocationTier1Data) : List[AssetAllocationTier1Data] = {
     assetsData.map(tier1Data => f(tier1Data))
   }
 
-  def roundPortfolioAllocations() : List[AssetAllocationTier1Data] = {
-    //val tier1Allocations = backtestAllocationSummary.allocationSummary.tier1Allocations
-    val level2Data  = extractLevel2Data(tier1Allocations)
-    val roundedValuesDown = level2Data.map(x => x.copy(portfolioPercent = roundDown(x.portfolioPercent,1)))
-//    val tuplasWithOutRounding : List[(AssetClassT2,Double)] = level2Data.map(x => (x.assetClass,x.portfolioPercent))
-//    val tuplasRoundedDown : List[(AssetClassT2,Double)] = roundedValuesDown.map( x => ( x.assetClass, x.portfolioPercent))
-    val tuplasWithOutRounding : List[(String,Double)] = level2Data.map(x => (x.assetClass,x.portfolioPercent))
-    val tuplasRoundedDown : List[(String,Double)] = roundedValuesDown.map( x => ( x.assetClass, x.portfolioPercent))
-    val tier2ValuesRoundedDownSum = sumTier2Values(tuplasRoundedDown)
-    val totalErrorFromRounding =  BigDecimal(100 - tier2ValuesRoundedDownSum).setScale(1, BigDecimal.RoundingMode.HALF_UP).toFloat
-    val orderedDesc = tuplasWithOutRounding.sortWith( (x,y) => getRestOfDecimalPart(x._2) > getRestOfDecimalPart(y._2)) //orderedDesc
-    val ajustePerIter : Float = "0.1".toFloat
-    val nIterations : Int = (if(totalErrorFromRounding < 1 && totalErrorFromRounding>0) totalErrorFromRounding * 10 else totalErrorFromRounding ).toInt
 
-//  val ajustedList : List[(AssetClassT2,Double)] = for ((e,i) <- orderedDesc.zipWithIndex) yield {
-    val ajustedList : List[(String,Double)] = for ((e,i) <- orderedDesc.zipWithIndex) yield {
-      if (i <  nIterations){
-        val maybeRoundedTuple = tuplasRoundedDown.find( y => y._1 == e._1 )
-        maybeRoundedTuple match {
-          case Some(roundedTuple) => roundedTuple.copy(_2 = roundDown(roundedTuple._2 + ajustePerIter, 1))
-//          case _ => (AssetClassT2("NONE"),0.0)
-          case _ => ("NONE",0.0)
-        }
 
-      }else {
-//        tuplasRoundedDown.find( y => y._1 === e._1 ).getOrElse((AssetClassT2("NONE"),0.0))
-        tuplasRoundedDown.find( y => y._1 == e._1 ).getOrElse(("NONE",0.0))
-      }}
-
-    val assetsWithTier2Rounded = tier1Allocations.map(x => {
-      x.copy(allocations = x.allocations.map( y => y.copy( portfolioPercent = ajustedList.find( p => p._1 == y.assetClass).fold(("NONE",0.0)){x => x}._2)))
-    })
-
-    val assetsAllocationDataWithT1Rounded = recalculatePercents(assetsWithTier2Rounded,funCalculatePortfolioT1)
-    assetsAllocationDataWithT1Rounded
-
-  }
-
-//def roundTargetPercentages(backtestAllocationSummary : BacktestAllocationSummary) : BacktestAllocationSummary  = {
-def roundTargetPercentages( assets : List[AssetAllocationTier1Data]): List[AssetAllocationTier1Data]  = {
-//  val tier1Allocations = backtestAllocationSummary.allocationSummary.tier1Allocations
+//For Portfolio
+//val getValueToRoundPortfolio = (assetsT2 : AssetAllocationTier2Data ) => assetsT2.portfolioPercent
+//val getT2DataCopyPortfolio = (assetsT2 : AssetAllocationTier2Data , value : Double) => assetsT2.copy(portfolioPercent = value)
+def getRoundedT2Values(assets : List[AssetAllocationTier1Data] , getValueToRound : AssetAllocationTier2Data => Double , getT2DataCopy : (AssetAllocationTier2Data, Double) => AssetAllocationTier2Data) : List[AssetAllocationTier1Data] = {
   val level2Data  = extractLevel2Data(assets)
-  val roundedValuesDown = level2Data.map(x => x.copy(targetPercentage = roundDown(x.targetPercentage,1)))
-//  val tuplasWithOutRounding : List[(AssetClassT2,Double)] = level2Data.map(x => (x.assetClass,x.targetPercentage))
-//  val tuplasRoundedDown : List[(AssetClassT2,Double)] = roundedValuesDown.map( x => ( x.assetClass, x.targetPercentage))
-  val tuplasWithOutRounding : List[(String,Double)] = level2Data.map(x => (x.assetClass,x.targetPercentage))
-  val tuplasRoundedDown : List[(String,Double)] = roundedValuesDown.map( x => ( x.assetClass, x.targetPercentage))
+  val roundedValuesDown = level2Data.map(x => getT2DataCopy(x,roundDown(getValueToRound(x),1)))
+  //  val tuplasWithOutRounding : List[(AssetClassT2,Double)] = level2Data.map(x => (x.assetClass,x.targetPercentage))
+  //  val tuplasRoundedDown : List[(AssetClassT2,Double)] = roundedValuesDown.map( x => ( x.assetClass, x.targetPercentage))
+  val tuplasWithOutRounding : List[(String,Double)] = level2Data.map(x => (x.assetClass,getValueToRound(x)))
+  val tuplasRoundedDown : List[(String,Double)] = roundedValuesDown.map( x => ( x.assetClass, getValueToRound(x)))
   val tier2ValuesRoundedDownSum = sumTier2Values(tuplasRoundedDown)
   val totalErrorFromRounding =  BigDecimal(100 - tier2ValuesRoundedDownSum).setScale(1, BigDecimal.RoundingMode.HALF_UP).toFloat
   val orderedDesc = tuplasWithOutRounding.sortWith( (x,y) => getRestOfDecimalPart(x._2) > getRestOfDecimalPart(y._2)) //orderedDesc
   val ajustePerIter : Float = "0.1".toFloat
   val nIterations : Int = (if(totalErrorFromRounding < 1 && totalErrorFromRounding>0) totalErrorFromRounding * 10 else totalErrorFromRounding ).toInt
 
-//  val ajustedList : List[(AssetClassT2,Double)] = for ((e,i) <- orderedDesc.zipWithIndex) yield {
-    val ajustedList : List[(String,Double)] = for ((e,i) <- orderedDesc.zipWithIndex) yield {
+  //  val ajustedList : List[(AssetClassT2,Double)] = for ((e,i) <- orderedDesc.zipWithIndex) yield {
+  val ajustedList : List[(String,Double)] = for ((e,i) <- orderedDesc.zipWithIndex) yield {
     if (i <  nIterations){
       val maybeRoundedTuple = tuplasRoundedDown.find( y => y._1 == e._1 )
       maybeRoundedTuple match {
@@ -212,18 +177,46 @@ def roundTargetPercentages( assets : List[AssetAllocationTier1Data]): List[Asset
       tuplasRoundedDown.find( y => y._1 == e._1 ).getOrElse(("NONE",0.0))
     }}
 
-  val assetsWithTier2Rounded = tier1Allocations.map(x => {
-    x.copy(allocations = x.allocations.map( y => y.copy( targetPercentage = ajustedList.find( p => p._1 == y.assetClass).fold(("NONE",0.0)){x => x}._2)))
+  val assetsWithTier2Rounded = assets.map(x => {
+    x.copy(allocations = x.allocations.map( y => getT2DataCopy(y,ajustedList.find( p => p._1 == y.assetClass).fold(("NONE",0.0)){x => x}._2)))
   })
-
-  val assetsAllocationDataWithT1Rounded = recalculatePercents(assetsWithTier2Rounded,funCalculateTargetsT1)
-  assetsAllocationDataWithT1Rounded
-//  backtestAllocationSummary.copy( allocationSummary = backtestAllocationSummary.allocationSummary.copy(tier1Allocations = assetsAllocationDataWithT1Rounded))
-
+  assetsWithTier2Rounded
 }
 
-  val rounded = roundPortfolioAllocations()
-  println(s"rounded : $rounded")
+  //val rounded = roundPortfolioAllocations()
+  //println(s"rounded : $rounded")
 
-println(s"roundedTargets : ${roundTargetPercentages(rounded)}")
+//println(s"roundedTargets : ${roundTargetPercentages(rounded)}")
   //backtestAllocationSummary.copy( allocationSummary = backtestAllocationSummary.allocationSummary.copy(tier1Allocations = roundPortfolioAllocations()))
+
+
+def roundPortfolioT2Values(assets : List[AssetAllocationTier1Data]) : List[AssetAllocationTier1Data] = {
+  val getValueToRoundPortfolio = (assetsT2 : AssetAllocationTier2Data ) => assetsT2.portfolioPercent
+  val getT2DataCopyPortfolio = (assetsT2 : AssetAllocationTier2Data , value : Double) => assetsT2.copy(portfolioPercent = value)
+  getRoundedT2Values(assets,getValueToRoundPortfolio,getT2DataCopyPortfolio)
+}
+
+def roundTargetT2Values(assets : List[AssetAllocationTier1Data]) : List[AssetAllocationTier1Data] = {
+  val getValueToRoundTarget = (assetsT2 : AssetAllocationTier2Data ) => assetsT2.targetPercentage
+  val getT2DataCopyTarget = (assetsT2 : AssetAllocationTier2Data , value : Double) => assetsT2.copy(targetPercentage = value)
+  getRoundedT2Values(assets,getValueToRoundTarget,getT2DataCopyTarget)
+}
+
+def recalculateRoundedPortfolioPercentsT1(assetsWithT2Rounded : List[AssetAllocationTier1Data]) : List[AssetAllocationTier1Data] = {
+
+  val acumulatorPortfolioFun = (acc : Double, assetTier2Data : AssetAllocationTier2Data) => {acc + assetTier2Data.portfolioPercent}
+  val funCalculatePortfolioT1 = (tier1Data : AssetAllocationTier1Data) => { tier1Data.copy(portfolioPercent = round(getSum(tier1Data.allocations,acumulatorPortfolioFun),1) ) }
+  recalculatePercents(assetsWithT2Rounded,funCalculatePortfolioT1)
+}
+
+def recalculateRoundedTargetPercentsT1(assetsWithT2Rounded : List[AssetAllocationTier1Data]) : List[AssetAllocationTier1Data] = {
+  val acumulatorTargetFun = (acc : Double, assetTier2Data : AssetAllocationTier2Data) => {acc + assetTier2Data.targetPercentage}
+  val funCalculateTargetsT1 = (tier1Data : AssetAllocationTier1Data) => { tier1Data.copy(targetPercentage = round(getSum(tier1Data.allocations,acumulatorTargetFun),1) ) }
+  recalculatePercents(assetsWithT2Rounded,funCalculateTargetsT1)
+}
+
+
+val portfolioT2Rounded = roundPortfolioT2Values(tier1Allocations)
+val portfolioT1Rounded = recalculateRoundedPortfolioPercentsT1(portfolioT2Rounded)
+val targetT2Rounded = roundTargetT2Values(portfolioT1Rounded)
+val targetT1Rounded = recalculateRoundedTargetPercentsT1(targetT2Rounded)
